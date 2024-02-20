@@ -87,7 +87,7 @@ namespace ConsoleAppTest
         }
 
 
-        /* [Fact]
+        [Fact(Skip = "Replaced by Plant_EmptyOrWhitespaceName_ArgumentException")]
          public void Plant_EmptyName_ArgumentException()
          {
              //Arrange
@@ -107,7 +107,7 @@ namespace ConsoleAppTest
              Assert.Contains(EXPECTED_MESSAGE, argumentExeption.Message);
          }
 
-         [Fact]
+         [Fact(Skip = "Replaced by Plant_EmptyOrWhitespaceName_ArgumentException")]
          public void Plant_WhitespaceName_ArgumentException()
          {
              //Arrange
@@ -125,7 +125,7 @@ namespace ConsoleAppTest
              var argumentExeption = Assert.IsType<ArgumentException>(exception);
              Assert.Equal(EXPECTED_PARAM_NAME, argumentExeption.ParamName);
              Assert.Contains(EXPECTED_MESSAGE, argumentExeption.Message);
-         }*/
+         }
 
         [Fact]
         public void Plant_ExistingName_ChangedName()
