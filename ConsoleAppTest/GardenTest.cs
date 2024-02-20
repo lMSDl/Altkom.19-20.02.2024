@@ -1,6 +1,8 @@
-﻿using ConsoleApp;
+﻿using AutoFixture;
+using ConsoleApp;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,29 +19,33 @@ namespace ConsoleAppTest
         {
             //Arrange
             const int MINIMAL_VALID_GARDEN_SIZE = 1;
-            const string VALID_NAME = "a"; //piszemy testy z minimalnym przekazem (paramety o jak namjniejszym polem do interpetacji) i opisujemy swoje intencje
+
+            //const string VALID_NAME = "a"; //piszemy testy z minimalnym przekazem (paramety o jak namjniejszym polem do interpetacji) i opisujemy swoje intencje
+            string validName = new Fixture().Create<string>();
+
             Garden garden = new(MINIMAL_VALID_GARDEN_SIZE);
 
             //Act
-            bool result = garden.Plant(VALID_NAME); 
+            bool result = garden.Plant(validName); 
 
             //Assert
             //sprawdzamy tylko jedną rzecz
             Assert.True(result);
         }
-
+        
         [Fact]
         public void Plant_OverflowGarden_False()
         {
             //Arrange
             const int MINIMAL_VALID_GARDEN_SIZE = 1;
-            const string VALID_NAME_1 = "a";
-            const string VALID_NAME_2 = "b";
+            var fixture = new Fixture();
+            string name1 = fixture.Create<string>();
+            string name2 = fixture.Create<string>();
             Garden garden = new(MINIMAL_VALID_GARDEN_SIZE);
-            garden.Plant(VALID_NAME_1);
+            garden.Plant(name1);
 
             //Act
-            bool result = garden.Plant(VALID_NAME_2);
+            bool result = garden.Plant(name2);
 
             //Assert
             Assert.False(result);
