@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using FluentAssertions;
 using System.Threading.Tasks;
+using FluentAssertions.Execution;
 
 namespace ConsoleAppTest
 {
@@ -24,7 +26,8 @@ namespace ConsoleAppTest
             logger.Log(log);
 
             //Assert
-            Assert.Equal(1, result);
+            //Assert.Equal(1, result);
+            result.Should().Be(1);
         }
 
         [Fact]
@@ -43,10 +46,38 @@ namespace ConsoleAppTest
             logger.Log(log);
 
             //Assert
-            Assert.Equal(logger, eventSender);
+            /*Assert.Equal(logger, eventSender);
             Assert.NotNull(loggerEventArgs);
             Assert.Equal(log, loggerEventArgs.Message);
-            Assert.InRange(loggerEventArgs.DateTime, timeStart, timeStop);
+            Assert.InRange(loggerEventArgs.DateTime, timeStart, timeStop);*/
+
+            using (new AssertionScope())
+            {
+                loggerEventArgs.Should().NotBeNull();
+                loggerEventArgs?.Message.Should().Be(log);
+                loggerEventArgs?.DateTime.Should().BeOnOrAfter(timeStart).And.BeOnOrBefore(timeStop);
+                eventSender.Should().Be(logger);
+            }
+        }
+
+        [Fact]
+        public void Log_AnyMessage_ValidEventInvoked_FA()
+        {
+            //Arrange
+            var log = new Fixture().Create<string>();
+            var logger = new Logger();
+            using var monitor = logger.Monitor();
+            
+            //Act
+            logger.Log(log);
+
+            //Assert
+            using (new AssertionScope())
+            {
+                monitor.Should().Raise(nameof(Logger.MessageLogged))
+                .WithSender(logger)
+                .WithArgs<Logger.LoggerEventArgs>();
+            }
         }
 
         [Fact]
