@@ -1,5 +1,7 @@
 ﻿using AutoFixture;
 using ConsoleApp;
+using FluentAssertions;
+using Moq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -26,13 +28,13 @@ namespace ConsoleAppTest
             Garden garden = new(MINIMAL_VALID_GARDEN_SIZE);
 
             //Act
-            bool result = garden.Plant(validName); 
+            bool result = garden.Plant(validName);
 
             //Assert
             //sprawdzamy tylko jedną rzecz
             Assert.True(result);
         }
-        
+
         [Fact]
         public void Plant_OverflowGarden_False()
         {
@@ -94,44 +96,44 @@ namespace ConsoleAppTest
 
 
         [Fact(Skip = "Replaced by Plant_EmptyOrWhitespaceName_ArgumentException")]
-         public void Plant_EmptyName_ArgumentException()
-         {
-             //Arrange
-             const int INSIGNIFICANT_SIZE = default;
-             Garden garden = new(INSIGNIFICANT_SIZE);
-             const string EMPTY_NAME = "";
-             const string EXPECTED_PARAM_NAME = "name";
-             const string EXPECTED_MESSAGE = "Roślina musi posiadać nazwę!";
+        public void Plant_EmptyName_ArgumentException()
+        {
+            //Arrange
+            const int INSIGNIFICANT_SIZE = default;
+            Garden garden = new(INSIGNIFICANT_SIZE);
+            const string EMPTY_NAME = "";
+            const string EXPECTED_PARAM_NAME = "name";
+            const string EXPECTED_MESSAGE = "Roślina musi posiadać nazwę!";
 
-             //Act
-             var exception = Record.Exception(() => garden.Plant(EMPTY_NAME));
+            //Act
+            var exception = Record.Exception(() => garden.Plant(EMPTY_NAME));
 
-             //Assert
-             Assert.NotNull(exception);
-             var argumentExeption = Assert.IsType<ArgumentException>(exception);
-             Assert.Equal(EXPECTED_PARAM_NAME, argumentExeption.ParamName);
-             Assert.Contains(EXPECTED_MESSAGE, argumentExeption.Message);
-         }
+            //Assert
+            Assert.NotNull(exception);
+            var argumentExeption = Assert.IsType<ArgumentException>(exception);
+            Assert.Equal(EXPECTED_PARAM_NAME, argumentExeption.ParamName);
+            Assert.Contains(EXPECTED_MESSAGE, argumentExeption.Message);
+        }
 
-         [Fact(Skip = "Replaced by Plant_EmptyOrWhitespaceName_ArgumentException")]
-         public void Plant_WhitespaceName_ArgumentException()
-         {
-             //Arrange
-             const int INSIGNIFICANT_SIZE = default;
-             Garden garden = new(INSIGNIFICANT_SIZE);
-             const string EMPTY_NAME = "  ";
-             const string EXPECTED_PARAM_NAME = "name";
-             const string EXPECTED_MESSAGE = "Roślina musi posiadać nazwę!";
+        [Fact(Skip = "Replaced by Plant_EmptyOrWhitespaceName_ArgumentException")]
+        public void Plant_WhitespaceName_ArgumentException()
+        {
+            //Arrange
+            const int INSIGNIFICANT_SIZE = default;
+            Garden garden = new(INSIGNIFICANT_SIZE);
+            const string EMPTY_NAME = "  ";
+            const string EXPECTED_PARAM_NAME = "name";
+            const string EXPECTED_MESSAGE = "Roślina musi posiadać nazwę!";
 
-             //Act
-             var exception = Record.Exception(() => garden.Plant(EMPTY_NAME));
+            //Act
+            var exception = Record.Exception(() => garden.Plant(EMPTY_NAME));
 
-             //Assert
-             Assert.NotNull(exception);
-             var argumentExeption = Assert.IsType<ArgumentException>(exception);
-             Assert.Equal(EXPECTED_PARAM_NAME, argumentExeption.ParamName);
-             Assert.Contains(EXPECTED_MESSAGE, argumentExeption.Message);
-         }
+            //Assert
+            Assert.NotNull(exception);
+            var argumentExeption = Assert.IsType<ArgumentException>(exception);
+            Assert.Equal(EXPECTED_PARAM_NAME, argumentExeption.ParamName);
+            Assert.Contains(EXPECTED_MESSAGE, argumentExeption.Message);
+        }
 
         [Fact]
         public void Plant_ExistingName_ChangedName()
@@ -155,7 +157,7 @@ namespace ConsoleAppTest
         {
             //Arrange
             const int INSIGNIFICANT_SIZE = default;
-            Garden garden = new(INSIGNIFICANT_SIZE);
+            Garden garden = new(INSIGNIFICANT_SIZE, new Mock<ILogger>().Object);
 
             //Act
             var result1 = garden.GetPlants();
@@ -164,5 +166,71 @@ namespace ConsoleAppTest
             //Assert
             Assert.NotSame(result1, result2); //sprawdzenie instancji
         }
+
+        [Fact]
+        public void Plant_ValidName_MessageLogged()
+        {
+            //Arrange
+            var fixture = new Fixture();
+            string name = fixture.Create<string>();
+            string expectedMessage = $"Roślina {name} została dodana do ogrodu";
+
+            const int MINIMAL_VALID_GARDEN_SIZE = 1;
+            var logger = new Mock<ILogger>();
+            logger.Setup(x => x.Log(It.Is<string>(expectedMessage, StringComparer.InvariantCulture))).Verifiable();
+            //logger.Setup(x => x.Log(It.IsAny<string>())).Verifiable();
+
+            Garden garden = new(MINIMAL_VALID_GARDEN_SIZE, logger.Object);
+
+            //Act
+            garden.Plant(name);
+
+            //Assert
+            logger.Verify();
+        }
+
+        [Fact]
+        public void Plant_DuplicatedName_MessageLogged()
+        {
+            //Arrange
+            var fixture = new Fixture();
+            string name = fixture.Create<string>();
+
+            const int MINIMAL_VALID_GARDEN_SIZE = 2;
+            var logger = new Mock<ILogger>();
+
+            Garden garden = new(MINIMAL_VALID_GARDEN_SIZE, logger.Object);
+            garden.Plant(name);
+
+            //Act
+            garden.Plant(name);
+
+            //Assert
+            logger.Verify(x => x.Log(It.Is<string>(xx => xx.Contains(name + 2))));
+            logger.Verify(x => x.Log(It.Is<string>(xx => xx.Contains(name))), Times.Exactly(3));
+        }
+
+        [Fact]
+        public void GetLastLog_LastLog()
+        {
+            //Arrange
+            var fixture = new Fixture();
+            string log1 = fixture.Create<string>();
+            string log2 = fixture.Create<string>();
+
+            const int INSIGNIFICANT_SIZE = 0;
+            var logger = new Mock<ILogger>();
+            logger.Setup(x => x.GetLogsAsync(It.Is<DateTime>(xx => xx == default), It.IsAny<DateTime>()))
+                  .ReturnsAsync($"{log1}\n{log2}");
+
+            Garden garden = new(INSIGNIFICANT_SIZE, logger.Object);
+
+            //Act
+            var result = garden.GetLastLog();
+
+            //Assert
+            result.Should().Be(log2);
+        }
+
     }
 }
