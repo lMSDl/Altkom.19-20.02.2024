@@ -93,7 +93,11 @@ namespace WebApiTest.Controllers
             //Arrange
             var service = new Mock<ICrudService<User>>();
             var expectedUser = new Fixture().Create<User>();
-            service.Setup(x => x.ReadAsync(expectedUser.Id)).ReturnsAsync(expectedUser);
+
+            //do weryfikacji?
+            var sequence = new MockSequence();
+            service.InSequence(sequence).Setup(x => x.ReadAsync(expectedUser.Id)).ReturnsAsync(expectedUser);
+            service.InSequence(sequence).Setup(x => x.DeleteAsync(expectedUser.Id));
 
             var controller = new UsersController(service.Object);
 
@@ -102,6 +106,7 @@ namespace WebApiTest.Controllers
 
             //Assert
             var actionResult = Assert.IsType<NoContentResult>(result);
+            service.Verify(x => x.ReadAsync(expectedUser.Id));
             service.Verify(x => x.DeleteAsync(expectedUser.Id), Times.Once);
         }
     }
